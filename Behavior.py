@@ -225,31 +225,32 @@ class TouchBehavior(Behavior):
         self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
         self.target_loc = condition['correct_loc']
         buttons = list()
-        buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
+        buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready',self.screen_sz))
         for i, loc in enumerate(zip(condition['obj_pos_x'], condition['obj_pos_y'])):
             is_target = True if (condition['correct_loc'] == np.array(loc)).all() else False
             touch_area = condition['touch_area'][i] if 'touch_area' in condition else (100, 300)
-            buttons.append(self.Button(self.loc2px(loc), 'choice', is_target, touch_area))
+            buttons.append(self.Button(self.loc2px(loc), 'choice',self.screen_sz, is_target, touch_area))
         self.buttons = np.asarray(buttons, dtype=object)
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
-            self.last_touch_tmst = self.logger.log_touch(self.px2loc([touch.x, touch.y]))
+            self.last_touch_tmst = self.logger.log_touch(self.px2loc([touch.x, self.screen_sz[1] - touch.y]))
             for idx, button in enumerate(self.buttons):
                 if self.buttons[idx].is_pressed(touch):
                     self.buttons[idx].tmst = self.last_touch_tmst
 
     class Button:
-        def __init__(self, loc, group='choice', is_target=False, touch_area=(100, 300)):
+        def __init__(self, loc, group='choice', screen_sz=(800, 480), is_target=False, touch_area=(100, 300)):
             self.loc = loc
+            self.screen_sz = screen_sz
             self.tmst = 0
             self.touch_area = touch_area
             self.group = group
             self.is_target = is_target
 
         def is_pressed(self, touch):
-            touch_x = self.loc[0] + self.touch_area[0] > touch.x > self.loc[0] - self.touch_area[0]
-            touch_y = self.loc[1] + self.touch_area[1] > touch.y > self.loc[1] - self.touch_area[1]
+            touch_x = self.loc[0] + self.touch_area[0]/2 > touch.x > self.loc[0] - self.touch_area[0]/2
+            touch_y = self.loc[1] + self.touch_area[1]/2 > self.screen_sz[1] - touch.y > self.loc[1] - self.touch_area[1]/2
             return touch_x and touch_y
 
 

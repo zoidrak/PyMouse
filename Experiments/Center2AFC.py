@@ -39,7 +39,7 @@ class State(StateClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.update_setup_info('state', type(self).__name__)
-        self.period_start = self.logger.log('PeriodOnset', {'period': type(self).__name__})
+        self.period_start = self.logger.log('StateOnset', {'state': type(self).__name__})
         self.timer.start()
 
     def run(self):
@@ -61,8 +61,10 @@ class PreTrial(State):
     def entry(self):
         self.logger.ping()
         self.stim.prepare()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
-        self.beh.prepare(self.stim.curr_cond)
+        if not self.stim.curr_cond:
+            self.logger.update_setup_info('status', 'stop', nowait=True)
+        else:
+            self.beh.prepare(self.stim.curr_cond)
         super().entry()
 
     def run(self):
@@ -71,7 +73,7 @@ class PreTrial(State):
             self.logger.ping()
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:
+        if self.logger.setup_status in ['stop', 'exit'] or not self.stim.curr_cond:
             return states['Exit']
         elif self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
